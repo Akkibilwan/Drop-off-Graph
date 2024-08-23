@@ -46,4 +46,35 @@ def process_data(file):
     for i in range(len(time_intervals)-1):
         start_time = time_intervals[i]
         end_time = time_intervals[i+1]
-        interval_data = df[(df['Leave
+        interval_data = df[(df['Leave Time'] >= start_time) & (df['Leave Time'] < end_time)]
+        drop_off_count = interval_data.shape[0]
+        drop_off_counts.append(drop_off_count)
+
+    return time_intervals[:-1], drop_off_counts
+
+# Streamlit app layout
+st.title("Session Drop-off Visualization")
+
+# Upload CSV file
+uploaded_file = st.file_uploader("Upload your CSV file", type=["csv"])
+
+if uploaded_file is not None:
+    # Process the uploaded file
+    time_intervals, drop_off_counts = process_data(uploaded_file)
+    
+    if time_intervals is not None:
+        # Plot the data
+        fig, ax = plt.subplots(figsize=(10, 6))
+        ax.plot(time_intervals, drop_off_counts, label='Drop-offs', color='red', marker='o')
+        ax.set_xlabel('Time')
+        ax.set_ylabel('Number of Users Dropped Off')
+        ax.set_title('User Drop-off Counts Every 5 Minutes')
+        ax.legend()
+        ax.grid(True)
+        st.pyplot(fig)
+        
+        # Provide download functionality for the plot
+        img_buf = io.BytesIO()
+        fig.savefig(img_buf, format='png')
+        img_buf.seek(0)
+        st.download_button(label="Download Image", data=img_buf, file_name="drop_off_visualization.png", mime="image/png")
