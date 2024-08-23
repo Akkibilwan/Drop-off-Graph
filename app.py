@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-import matplotlib.pyplot as plt
+import plotly.graph_objs as go
 import io
 
 # Function to process the CSV and generate drop-off data
@@ -63,18 +63,26 @@ if uploaded_file is not None:
     time_intervals, drop_off_counts = process_data(uploaded_file)
     
     if time_intervals is not None:
-        # Plot the data
-        fig, ax = plt.subplots(figsize=(10, 6))
-        ax.plot(time_intervals, drop_off_counts, label='Drop-offs', color='red', marker='o')
-        ax.set_xlabel('Time')
-        ax.set_ylabel('Number of Users Dropped Off')
-        ax.set_title('User Drop-off Counts Every 5 Minutes')
-        ax.legend()
-        ax.grid(True)
-        st.pyplot(fig)
+        # Format time intervals to only show time (not date)
+        time_labels = [interval.strftime('%H:%M') for interval in time_intervals]
+        
+        # Create the Plotly figure
+        fig = go.Figure(data=go.Scatter(x=time_labels, y=drop_off_counts, mode='lines+markers', marker=dict(color='red')))
+        
+        # Update layout for the figure
+        fig.update_layout(
+            title="User Drop-off Counts Every 5 Minutes",
+            xaxis_title="Time",
+            yaxis_title="Number of Users Dropped Off",
+            xaxis=dict(tickmode='array', tickvals=time_labels),
+            showlegend=False
+        )
+        
+        # Display the Plotly chart
+        st.plotly_chart(fig)
         
         # Provide download functionality for the plot
         img_buf = io.BytesIO()
-        fig.savefig(img_buf, format='png')
+        fig.write_image(img_buf, format='png')
         img_buf.seek(0)
         st.download_button(label="Download Image", data=img_buf, file_name="drop_off_visualization.png", mime="image/png")
