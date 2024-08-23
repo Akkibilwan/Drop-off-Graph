@@ -10,15 +10,33 @@ def process_data(file):
     data = pd.read_csv(file)
     
     # Extract the leave times
-    data['Leave Time'] = data['Sessions'].apply(lambda x: x.split(' - ')[1].strip())
-    data['Leave Time'] = pd.to_datetime(data['Leave Time'], format='%d/%m/%Y, %I:%M:%S %p', errors='coerce')
-    
-    # Filter out invalid dates
-    data = data.dropna(subset=['Leave Time'])
-    
+    leave_times = []
+    invalid_entries = []
+
+    for session in data['Sessions']:
+        try:
+            leave_time_str = session.split(' - ')[1].strip()
+            leave_time = pd.to_datetime(leave_time_str, format='%d/%m/%Y, %I:%M:%S %p', errors='coerce')
+            
+            if pd.isnull(leave_time):
+                invalid_entries.append(session)
+            else:
+                leave_times.append(leave_time)
+        except Exception as e:
+            invalid_entries.append(session)
+            continue
+
+    if invalid_entries:
+        st.warning(f"Skipped {len(invalid_entries)} invalid entries.")
+        st.write("Invalid entries:", invalid_entries)
+
     # Sort the leave times
-    leave_times = data['Leave Time'].sort_values()
+    leave_times = pd.Series(leave_times).sort_values()
     
+    if leave_times.empty:
+        st.error("No valid leave times found.")
+        return None, None
+
     # Determine the session start and end times
     session_start_time = leave_times.min()
     session_end_time = leave_times.max()
@@ -45,27 +63,28 @@ if uploaded_file is not None:
     # Process the uploaded file
     time_intervals, drop_off_counts = process_data(uploaded_file)
     
-    # Plot the data
-    st.subheader("Drop-off Visualization")
-    fig, ax = plt.subplots(figsize=(10, 6))
-    ax.plot(time_intervals, drop_off_counts, label='Drop-offs', color='red', marker='o')
-    ax.set_xlabel('Time')
-    ax.set_ylabel('Number of Users Dropped Off')
-    ax.set_title('User Drop-off Counts Every 5 Minutes')
-    ax.legend()
-    ax.grid(True)
-    st.pyplot(fig)
-    
-    # Provide download functionality for the plot
-    st.subheader("Download the Visualization")
-    img_buf = io.BytesIO()
-    fig.savefig(img_buf, format='png')
-    img_buf.seek(0)
-    st.download_button(label="Download Image", data=img_buf, file_name="drop_off_visualization.png", mime="image/png")
-    
-    # Provide download functionality for the processed data
-    download_data = pd.DataFrame({"Time Interval": time_intervals, "Drop-offs": drop_off_counts})
-    csv_buf = io.StringIO()
-    download_data.to_csv(csv_buf, index=False)
-    csv_buf.seek(0)
-    st.download_button(label="Download CSV Data", data=csv_buf, file_name="drop_off_data.csv", mime="text/csv")
+    if time_intervals is not None:
+        # Plot the data
+        st.subheader("Drop-off Visualization")
+        fig, ax = plt.subplots(figsize=(10, 6))
+        ax.plot(time_intervals, drop_off_counts, label='Drop-offs', color='red', marker='o')
+        ax.set_xlabel('Time')
+        ax.set_ylabel('Number of Users Dropped Off')
+        ax.set_title('User Drop-off Counts Every 5 Minutes')
+        ax.legend()
+        ax.grid(True)
+        st.pyplot(fig)
+        
+        # Provide download functionality for the plot
+        st.subheader("Download the Visualization")
+        img_buf = io.BytesIO()
+        fig.savefig(img_buf, format='png')
+        img_buf.seek(0)
+        st.download_button(label="Download Image", data=img_buf, file_name="drop_off_visualization.png", mime="image/png")
+        
+        # Provide download functionality for the processed data
+        download_data = pd.DataFrame({"Time Interval": time_intervals, "Drop-offs": drop_off_counts})
+        csv_buf = io.StringIO()
+        download_data.to_csv(csv_buf, index=False)
+        csv_buf.seek(0)
+        st.download_button(label="Download CSV Data", data=csv_buf, file_name="drop_off_data.csv", mime="text/csv")
