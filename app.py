@@ -8,13 +8,13 @@ def process_data(file):
     # Read the CSV file
     data = pd.read_csv(file)
     
-    # Extract the leave times and corresponding user names
+    # Extract the leave times from the 'Sessions' column
     leave_times = []
     invalid_entries = []
 
     for session in data['Sessions']:
         try:
-            leave_time_str = session.split(' - ')[1].strip()
+            leave_time_str = session.split(' - ')[1].strip()  # Extract end time
             leave_time = pd.to_datetime(leave_time_str, format='%d/%m/%Y, %I:%M:%S %p', errors='coerce')
             
             if pd.isnull(leave_time):
@@ -86,3 +86,4 @@ if uploaded_file is not None:
         fig.write_image(img_buf, format='png')
         img_buf.seek(0)
         st.download_button(label="Download Image", data=img_buf, file_name="drop_off_visualization.png", mime="image/png")
+
