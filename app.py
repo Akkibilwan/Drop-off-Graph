@@ -1,6 +1,5 @@
 import streamlit as st
 import pandas as pd
-import io
 
 def process_data(data):
     # Clean and parse session times
@@ -30,8 +29,8 @@ def process_data(data):
     return drop_off_counts
 
 def main():
-    st.title("User Drop-off and Presence Analysis")
-    st.write("Upload a CSV file containing session data to generate a drop-off count and users present report.")
+    st.title("Session Analysis: Drop-offs and Users Present")
+    st.write("Upload a CSV file containing session data to generate a report with drop-off counts and users present.")
 
     # File uploader
     uploaded_file = st.file_uploader("Choose a CSV file", type="csv")
@@ -44,11 +43,11 @@ def main():
         report = process_data(data)
 
         # Display the report
-        st.write("Drop-off Counts and Users Present Every 5 Minutes")
+        st.write("Report: Drop-offs and Users Present Every 5 Minutes")
         st.dataframe(report)
 
         # Convert DataFrame to CSV
-        csv = report.to_csv(index=False)
+        csv = report.to_csv(index=False).encode('utf-8')
         st.download_button(label="Download Report CSV", data=csv, file_name='drop_off_and_presence_report.csv', mime='text/csv')
 
 if __name__ == "__main__":
